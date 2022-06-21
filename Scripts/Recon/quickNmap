@@ -1,0 +1,38 @@
+#!/bin/bash -e
+## Usage quickNmap $IP
+
+if [ $# -lt 1 ]; then
+    #If fewer than 1 parameter are given, then display an error and exit
+    echo "Usage: quickNmap IP."
+    exit
+elif [ $# -gt 2 ]; then
+    # If more than 3 parameters are given, then display an error and exit
+    echo "Please input IPs similar to nmap syntax."
+    exit
+else
+    echo "Scanning:"
+    echo $1
+fi
+
+mkdir -p nmap
+touch nmap/nmapScan
+touch nmap/nmapVulnScan
+
+pnPorts=$(nmap -Pn -p- --min-rate=1000 -T4 $1 | grep ^[0-9] | cut -d '/' -f1 | tr '\n' ',' | sed s/,$//)
+ports=$(nmap -p- --min-rate=1000 -T4 $1 | grep ^[0-9] | cut -d '/' -f1 | tr '\n' ',' | sed s/,$//)
+
+if [ -z "$ports" ];then
+    echo $pnPorts
+    nmap -Pn -sC -sV -p$pnPorts $1 >> nmap/nmapScan
+    echo "ICMP disabled. Default scan complete."
+    nmap -Pn --script vuln -p$pnPorts $1 >> nmap/nmapVulnScan
+    echo "ICMP disabled. Vuln scan complete."
+else
+    echo $ports
+    nmap -sC -sV -p$ports $1 >> nmap/nmapScan
+    echo "Default scan complete."
+    nmap --script vuln -p$ports $1 >>nmap/nmapVulnScan
+    echo "Vuln scan complete."
+fi
+
+echo "Done. Done!"
